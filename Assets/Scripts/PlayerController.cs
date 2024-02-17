@@ -24,6 +24,10 @@ public class PlayerController : MonoBehaviour
     private float _forceMagnitute;
 
 
+    // Handle spawning at screen bounds
+    private Vector3 _newPosition;
+    private Vector3 _viewPortPosition;
+
 
     private Rigidbody _rb;
 
@@ -37,6 +41,27 @@ public class PlayerController : MonoBehaviour
 
 
     private void Update()
+    {
+        ProcessInput();
+
+        KeepPlayerOnScreen();
+    }
+
+
+    private void FixedUpdate()
+    {
+        if (_movementDirection.Equals(Vector3.zero))
+        {
+            return;
+        }
+
+        _rb.AddForce(_movementDirection * _forceMagnitute, ForceMode.Force);
+
+        _rb.velocity = Vector3.ClampMagnitude(_rb.velocity, _maxVelocity);
+    }
+
+
+    private void ProcessInput()
     {
         if (Touchscreen.current.primaryTouch.press.isPressed)
         {
@@ -53,22 +78,33 @@ public class PlayerController : MonoBehaviour
     }
 
 
-    private void FixedUpdate()
+    private void KeepPlayerOnScreen()
     {
-        if (_movementDirection.Equals(Vector3.zero))
+        float teleportationOffset = 5.0f;
+        _newPosition = transform.position;
+
+        // calculate view port bounds
+        _viewPortPosition = _mainCamera.WorldToViewportPoint(transform.position);
+
+        if (_viewPortPosition.x > 1)
         {
-            return;
+            _newPosition.x = -_newPosition.x + teleportationOffset;
+        }
+        else if (_viewPortPosition.x <= 0)
+        {
+            _newPosition.x = -_newPosition.x - teleportationOffset;
+        }
+        
+        if (_viewPortPosition.y > 1)
+        {
+            _newPosition.y = -_newPosition.y + teleportationOffset;
+            Debug.Log(_newPosition.y);
+        }
+        else if (_viewPortPosition.y <= 0)
+        {
+            _newPosition.y = -_newPosition.y - teleportationOffset;
         }
 
-        _rb.AddForce(_movementDirection * _forceMagnitute * Time.deltaTime, ForceMode.Force);
-        Debug.Log(_rb.velocity);
-
-        _rb.velocity = Vector3.ClampMagnitude(_rb.velocity, _maxVelocity);
-    }
-
-
-    private void GetTouchPosition()
-    {
-        
+        transform.position = _newPosition;
     }
 }
